@@ -1,13 +1,17 @@
 import logging
-import os.path
+import os
 import re
+import requests
 import yaml
-from exceptions import InvalidConfigException, InvalidEmailException, NoKeysException, BadKeysException, NoConfigException
+from exceptions import InvalidConfigException, InvalidEmailException, NoKeysException, BadKeysException, NoConfigException, NoInternetException
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+from time import sleep
+
+RUN_DELAY_SECS = 60
 
 def log(msg: str):
     logging.warning(msg)
@@ -44,9 +48,14 @@ class Config:
 
     def __is_email(self, s: str):
         return re.match(r"^[a-zA-Z0-9-_]+@[a-zA-Z0-9]+\.[a-z]{1,3}$", s)
-                
 
-def start():
+def connectedToInternet() -> bool:
+    r = requests.get('https://www.google.com')
+    return bool(r.status_code)
+
+def initialize():
+    if not connectedToInternet():
+        raise NoInternetException
     cfg = Config('../config/config.yaml')
     creds = None
     if os.path.exists('../config/keys.json'):
@@ -65,13 +74,18 @@ def start():
         # TODO: Add error handling for improper API startup
         pass 
 
+def run():
+    while True:
+        sleep(RUN_DELAY_SECS)
+
 def main():
     logging.basicConfig(filename='../app.log', filemode='w', format='%(asctime)s - %(message)s',
                         datefmt='%m-%d-%Y %H:%M:%S')
     log('test')
     # TODO: Get logging system working
     quit()
-    start()
+    initialize()
+    run()
 
 
 if __name__ == '__main__':
