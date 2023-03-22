@@ -1,4 +1,9 @@
-import main
+import CompanionCube
+
+# TODO: Write automated tests
+
+def testStart():
+    CompanionCube.start()
 
 def main():
     pass
