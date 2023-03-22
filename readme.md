@@ -1,1 +1,1 @@
-'# Companion Cube' 
+# Companion Cube
