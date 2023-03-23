@@ -1,20 +1,24 @@
-import logging
 import os
 import re
 import requests
+import time
 import yaml
-from exceptions import InvalidConfigException, InvalidEmailException, NoKeysException, BadKeysException, NoConfigException, NoInternetException
+from datetime import datetime
+from exceptions import InvalidConfigException, InvalidEmailException, NoKeysException, BadKeysException, NoConfigException, NoInternetException, FatalException
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
-from time import sleep
 
 RUN_DELAY_SECS = 60
+NO_INTERNET_DELAY_SECS = 120
 
 def log(msg: str):
-    logging.warning(msg)
+    now = datetime.now()
+    now = now.strftime('%m-%d-%Y %H:%M:%S')
+    with open('../app.log', 'a+') as f:
+        f.writelines([f'[{now}]   {msg}\n'])
 
 class Config:
     def __init__(self, path: str):
@@ -54,7 +58,10 @@ def connectedToInternet() -> bool:
     return bool(r.status_code)
 
 def initialize():
+    log("Beginning initialization.")
     if not connectedToInternet():
+        log("No Internet connection at initialize()! Restarting device.")
+        # TODO: Add log message
         raise NoInternetException
     cfg = Config('../config/config.yaml')
     creds = None
@@ -69,24 +76,27 @@ def initialize():
         service = build('gmail', 'v1', credentials=creds)
         results = service.users().labels(userId='me').execute()
         labels = results.get('labels', [])
-
     except:
         # TODO: Add error handling for improper API startup
-        pass 
+        pass
 
 def run():
     while True:
-        sleep(RUN_DELAY_SECS)
+        if not connectedToInternet():
+            log(f"No Internet connection at top of run()! Sleeping {NO_INTERNET_DELAY_SECS}s.")
+            time.sleep(NO_INTERNET_DELAY_SECS)
+            continue
+
+        log(f"End of run(). Sleeping {RUN_DELAY_SECS}s.")
+        time.sleep(RUN_DELAY_SECS)
 
 def main():
-    logging.basicConfig(filename='../app.log', filemode='w', format='%(asctime)s - %(message)s',
-                        datefmt='%m-%d-%Y %H:%M:%S')
-    log('test')
-    # TODO: Get logging system working
-    quit()
-    initialize()
-    run()
-
+    try:
+        initialize()
+        run()
+    except FatalException as e:
+        log(f"Fatal exception: {repr(e)}")
+        exit()
 
 if __name__ == '__main__':
     main()
