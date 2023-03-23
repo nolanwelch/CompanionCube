@@ -35,3 +35,6 @@ class NoInternetException(NonFatalException):
 class NoWhitelistedMessageException(NonFatalException):
     def __init__(self):
         super().__init__("No whitelisted message was found")
+
+class NonFatalFetchException (NonFatalException):
+    pass
