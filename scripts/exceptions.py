@@ -31,3 +31,7 @@ class BadKeysException(InvalidConfigException):
 class NoInternetException(NonFatalException):
     def __init__(self):
         super().__init__("No Internet connection")
+
+class NoWhitelistedMessageException(NonFatalException):
+    def __init__(self):
+        super().__init__("No whitelisted message was found")
