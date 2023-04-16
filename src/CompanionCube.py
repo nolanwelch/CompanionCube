@@ -1,11 +1,11 @@
 import requests
 import time
-from ccdisplay import Display
+from CompanionCube.src.display import Display
+from CompanionCube.src.userconfig import UserConfig
+from CompanionCube.src.utils import Switch, LightSensor, LED
 from datetime import datetime
 from exceptions import NoInternetException, FatalException, NonFatalFetchException
 from imbox import Imbox
-from ccuserconfig import UserConfig
-from ccutils import Switch, LightSensor, LED
 from traceback import print_exc
 
 FETCH_DELAY_SECS = 60
@@ -16,15 +16,18 @@ SWITCH_PIN = 6
 LED_PIN = 7
 LIGHT_SENSOR_THRESHOLD = 120
 
-DEBUG_SWITCH_PRESS_SECS = 5
+DEBUG_SWITCH_PRESS_SECS = 15
 
-def log(msg: str):
+def log(msg: str, debug: bool=False, display: Display=None):
     now = datetime.now()
-    now = now.strftime('%m-%d-%Y %H:%M:%S')
+    now = now.strftime(r'%m-%d-%Y %H:%M:%S')
     out_str = f'[{now}]   {msg}'
     with open('../app.log', 'a+') as f:
         f.write(f'{out_str}\n')
     print(out_str)
+    if debug:
+        display.updateText(out_str)
+
 
 def connectedToInternet() -> bool:
     r = requests.get('https://www.google.com')
@@ -33,9 +36,9 @@ def connectedToInternet() -> bool:
 def loadConfig() -> UserConfig:
     log("Loading config.")
     if not connectedToInternet():
-        log("No Internet connection at loadConfig()")
+        log("No Internet connection when loading config")
         raise NoInternetException
-    cfg = UserConfig('../config/config.yaml')
+    cfg = UserConfig('../cfg/config.yaml')
     return cfg
 
 def loadDisplay() -> Display:
@@ -73,7 +76,7 @@ def fetch(cfg: UserConfig) -> str:
     log(f"Fetch successful. Waiting {FETCH_DELAY_SECS}s before fetching again.")
     return fetched_content
 
-def run(cfg: UserConfig, display: Display):
+def run(cfg: UserConfig, display: Display) -> None:
     debug_mode = False
 
     latest_fetch_time = 0
@@ -112,16 +115,16 @@ def run(cfg: UserConfig, display: Display):
             switch_press_start_time = 0
 
         # Check if photosensor detects light (lid is open) or momentary switch is pressed (manual input)
-        # RPi cannot read analog directly, so use ADC (analog to digital converter) chip like the MCP3008 https://www.adafruit.com/product/856
+        # RPi cannot read analog directly; use ADC chip like the MCP3008 https://www.adafruit.com/product/856
         if light_sensor.getLevel() >= LIGHT_SENSOR_THRESHOLD or switch.isPressed():
             led.disable()
-            display.on()
+            display.turnOn()
         else:
             led.enable()
-            display.off()
+            display.turnOff()
         
 
-def main():
+def start() -> None:
     try:
         cfg: UserConfig = loadConfig()
         display: Display = loadDisplay()
@@ -132,4 +135,4 @@ def main():
         exit()
 
 if __name__ == '__main__':
-    main()
+    start()
