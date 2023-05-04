@@ -1,6 +1,0 @@
-username: sample@yahoo.com 
-password: hunter2
-imap-url: imap.google.com
-whitelist:
-  example@outlook.com
-  joe@gmail.com

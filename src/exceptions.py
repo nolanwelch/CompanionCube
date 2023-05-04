@@ -5,12 +5,12 @@ class NonFatalException(Exception):
     pass
 
 class NoConfigException(FatalException):
-    def __init__(self):
-        super().__init__("No config file")
+    def __init__(self, text='No config file'):
+        super().__init__(text)
 
 class InvalidConfigException(FatalException):
-    def __init__(self):
-        super().__init__("Invalid config file")
+    def __init__(self, text='Invalid config file'):
+        super().__init__(text)
 
 class InvalidEmailException(InvalidConfigException):
     def __init__(self, email='UNSPECIFIED'):

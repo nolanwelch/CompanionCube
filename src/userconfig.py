@@ -1,7 +1,7 @@
 import os
 import re
 import yaml
-from CompanionCube.scripts.exceptions import NoConfigException, InvalidConfigException, InvalidEmailException
+from exceptions import NoConfigException, InvalidConfigException, InvalidEmailException
 
 class UserConfig:
     def __init__(self, path: str):
@@ -13,11 +13,12 @@ class UserConfig:
             cfg = yaml.safe_load(f)
             if set(['whitelist', 'username', 'password', 'imap-url']) != set(cfg.keys()):
                 raise InvalidConfigException
+            cfg['whitelist'] = cfg['whitelist'].split(' ')
             for email in cfg['whitelist']:
                 if type(email) is str and self.__is_email(email):
                     self.emails.append(email)
                 else:
-                    raise InvalidEmailException
+                    raise InvalidEmailException(email)
             if type(cfg['username']) is str and self.__is_email(cfg['username']):
                 self.username = cfg['username']
             else:
@@ -26,12 +27,10 @@ class UserConfig:
                 self.password = cfg['password']
             else:
                 raise InvalidConfigException
-            if type(cfg['imap-url']) is str and re.match(r"""/^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.
-                                                         [a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&\/=]*)$/""",
-                                                         cfg['imap-url']):
+            if type(cfg['imap-url']) is str:
                 self.imap_url = cfg['imap-url']
             else:
                 raise InvalidConfigException
 
     def __is_email(self, s: str):
-        return re.match(r"^[a-zA-Z0-9-_]+@[a-zA-Z0-9]+\.[a-z]{1,3}$", s)
+        return re.match(r"^[a-zA-Z0-9-_]+@[a-zA-Z0-9]+\.[a-z]{1,3}$", s) != None

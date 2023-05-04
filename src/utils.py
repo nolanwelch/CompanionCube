@@ -9,8 +9,8 @@ class LightSensor:
     def __init__(self, pin: int):
         self.pin = pin
 
-    def getLevel(self):
-        return
+    def getLevel(self) -> int:
+        return 0
 
 class LED:
     def __init__(self, pin: int):

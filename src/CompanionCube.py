@@ -1,8 +1,9 @@
+import os
 import requests
 import time
-from CompanionCube.src.display import Display
-from CompanionCube.src.userconfig import UserConfig
-from CompanionCube.src.utils import Switch, LightSensor, LED
+from display import Display
+from userconfig import UserConfig
+from utils import Switch, LightSensor, LED
 from datetime import datetime
 from exceptions import NoInternetException, FatalException, NonFatalFetchException
 from imbox import Imbox
@@ -17,6 +18,9 @@ LED_PIN = 7
 LIGHT_SENSOR_THRESHOLD = 120
 
 DEBUG_SWITCH_PRESS_SECS = 15
+
+PATH_DIR = os.path.dirname(os.path.realpath(__file__))
+CFG_DIR = '../cfg/config.yaml'
 
 def log(msg: str, debug: bool=False, display: Display=None):
     now = datetime.now()
@@ -34,11 +38,11 @@ def connectedToInternet() -> bool:
     return bool(r.status_code)
 
 def loadConfig() -> UserConfig:
-    log("Loading config.")
+    log(f"Loading config from {os.path.abspath(os.path.join(PATH_DIR, CFG_DIR))}.")
     if not connectedToInternet():
-        log("No Internet connection when loading config")
+        log("No Internet connection when loading config.")
         raise NoInternetException
-    cfg = UserConfig('../cfg/config.yaml')
+    cfg = UserConfig(CFG_DIR)
     return cfg
 
 def loadDisplay() -> Display:
@@ -63,18 +67,18 @@ def fetch(cfg: UserConfig) -> str:
     if not connectedToInternet():
         raise NoInternetException
         
-    mail = Imbox(cfg.imap_url, username=cfg.username, password=cfg.password,
-                     ssl=True, ssl_context=None, starttls=False)
+    with Imbox(cfg.imap_url, username=cfg.username, password=cfg.password,
+                     ssl=True, ssl_context=None, starttls=False) as mail:
 
-    msg = getLatestMessageWithAttachment(mail, cfg.emails)
-    if msg is None:
-        log(f"No message found from whitelisted senders.")
-        raise NonFatalFetchException
-        
-    fetched_content = getContentFromAttachment(msg)
+        msg = getLatestMessageWithAttachment(mail, cfg.emails)
+        if msg is None:
+            log(f"No message found from whitelisted senders.")
+            raise NonFatalFetchException
+            
+        fetched_content = getContentFromAttachment(msg)
 
-    log(f"Fetch successful. Waiting {FETCH_DELAY_SECS}s before fetching again.")
-    return fetched_content
+        log(f"Fetch successful. Waiting {FETCH_DELAY_SECS}s before fetching again.")
+        return fetched_content
 
 def run(cfg: UserConfig, display: Display) -> None:
     debug_mode = False
@@ -102,7 +106,7 @@ def run(cfg: UserConfig, display: Display) -> None:
                 log(f"Sleeping {FETCH_DELAY_SECS}s before cycling.")
                 cycle_sleep_secs = FETCH_DELAY_SECS
             except Exception:
-                log(f"Un unknown exception occurred: {print_exc()}. Cycling.")
+                log(f"An unknown exception occurred: {print_exc()}. Cycling.")
         
         # debug mode switch press timer
         if switch.isPressed():
@@ -126,12 +130,17 @@ def run(cfg: UserConfig, display: Display) -> None:
 
 def start() -> None:
     try:
+        initial_d: str = os.getcwd()
+        os.chdir(PATH_DIR)
+        log(f"Program run from {initial_d}.")
+        log(f"Changed working directory to {os.getcwd()}.")
         cfg: UserConfig = loadConfig()
         display: Display = loadDisplay()
         log("Config successfully loaded.")
         run(cfg, display)
     except FatalException as e:
         log(f"Fatal exception: {repr(e)}. Restarting device.")
+        # TODO: Add restart command after dev phase
         exit()
 
 if __name__ == '__main__':
