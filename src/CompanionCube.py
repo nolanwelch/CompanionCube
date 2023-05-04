@@ -68,7 +68,7 @@ def fetch(cfg: UserConfig) -> str:
         raise NoInternetException
         
     with Imbox(cfg.imap_url, username=cfg.username, password=cfg.password,
-                     ssl=True, ssl_context=None, starttls=False) as mail:
+                     ssl=True, ssl_context=None, starttls=True) as mail:
 
         msg = getLatestMessageWithAttachment(mail, cfg.emails)
         if msg is None:
@@ -135,8 +135,11 @@ def start() -> None:
         log(f"Program run from {initial_d}.")
         log(f"Changed working directory to {os.getcwd()}.")
         cfg: UserConfig = loadConfig()
+        log(f"Loaded config with username {cfg.username} at IMAP {cfg.imap_url}.")
+        for e in cfg.emails:
+            log(f"Read whitelisted email {e}.")
         display: Display = loadDisplay()
-        log("Config successfully loaded.")
+        log("Successfully loaded display.")
         run(cfg, display)
     except FatalException as e:
         log(f"Fatal exception: {repr(e)}. Restarting device.")
