@@ -1,6 +1,9 @@
 # User config
 cfg/*
 
+# Log file
+app.log
+
 # Project files
 config/*
 
